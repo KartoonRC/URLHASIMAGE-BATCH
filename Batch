@@ -1,0 +1,43 @@
+function checkImages() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var urlColumn = 1; // Assuming the URLs are in the first column (A)
+  var resultColumn = 2; // Store results in the second column (B)
+  
+  // Get the range of URLs
+  var range = sheet.getRange(1, urlColumn, sheet.getLastRow());
+  var urls = range.getValues();
+  
+  // Process URLs in batches to avoid execution time limits
+  var batchSize = 10;  // Adjust batch size if script is still too slow or hits time limits
+  for (var i = 0; i < urls.length; i += batchSize) {
+    urlBatchCheck(urls, i, batchSize, resultColumn);
+    // Log progress
+    console.log('Processed batch: ' + i / batchSize + '  ' + Math.min((i + batchSize) / batchSize, urls.length / batchSize));
+  }
+  
+  console.log('Process completed.');
+}
+
+function urlBatchCheck(urls, start, batchSize, resultColumn) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  for (var i = start; i < Math.min(urls.length, start + batchSize); i++) {
+    var url = urls[i][0];
+    var hasImage = urlHasImage(url);
+    sheet.getRange(i + 1, resultColumn).setValue(hasImage ? "Image found" : "No image");
+  }
+}
+
+function urlHasImage(url) {
+  try {
+    var response = UrlFetchApp.fetch(url, {muteHttpExceptions: true});
+    var contentType = response.getHeaders()["ContentType"];
+    if (contentType && contentType.indexOf("image") !== 1) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (e) {
+    Logger.log("Error: " + e.toString());
+    return false;
+  }
+}
